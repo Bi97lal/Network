@@ -1,0 +1,31 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+<div class="contener">
+    <h3 class="follower">Followers:</h3>
+    <h3 class="following">Following:</h3>
+
+</div>
+    <h4>{{username}}</h4><br>
+    <div class="post_page">
+    {% for post in all_posts %}
+    <div class="Post_con">
+        <h5 class="username">@{{ post.user }}</h5>
+        <h6 class="content">{{ post.content }}</h6>
+        <p class="date">{{ post.date }}</p>
+    </div>
+    {% endfor %}
+    </div>
+    <nav aria-label="Page navigation example">
+        <ul class="pagination">
+            {% if post_page.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ post_page.previous_page_number }}">Previous</a></li>
+            {% endif %}
+            
+            {% if post_page.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ post_page.next_page_number }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    
+{% endblock %}
