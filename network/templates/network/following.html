@@ -1,0 +1,29 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+
+
+
+<h4><b> following</b></h4><br>
+<div class="post_page">
+    {% for post in all_posts %}
+    <div class="Post_con">
+        <h5 class="username">@{{ post.user }}</h5>
+        <h6 class="content">{{ post.content }}</h6>
+        <p class="date">{{ post.date }}</p>
+    </div>
+    {% endfor %}
+    </div>
+    <!-- need check -->
+    <nav aria-label="Page navigation example">
+        <ul class="pagination">
+            {% if post_page.has_previous %}
+            <a class="page-link" href="?page={{ post_page.previous_page_number }}&user_id={{ user_obj.id }}">Previous</a>
+            {% endif %}
+            
+            {% if post_page.has_next %}
+            <a class="page-link" href="?page={{ post_page.next_page_number }}&user_id={{ user_obj.id }}">Next</a>
+            {% endif %}
+        </ul>
+    </nav>
+{% endblock %}

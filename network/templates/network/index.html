@@ -1,38 +1,181 @@
 {% extends "network/layout.html" %}
 
 {% block body %}
-<h4><b>All posts</b></h4><br>
-{% if user.is_authenticated %}
-<div class="posts_1">
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
 
-    <h2>new post</h2>
-    <form action="{% url 'newpost' %}" method="post">
-        {% csrf_token %}
-        <textarea name="content" cols="80" rows="4"></textarea><br>
-        <input type="submit" value="Post">
-    </form>
+    .parent-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column; 
+    }
+
+    .new_post {
+        text-align: center; 
+        margin-top: 4px;
+        margin-left: 8px; 
+    }
+
     
-</div> 
+    .Post_con {
+        border: 1px solid #ccc; 
+        padding: 5px; 
+        text-align: left;
+        margin-bottom: 5px;
+        width: 600px;
+    }
 
-{% endif %}
-<div class="post_page">
+    .Edit_button {
+        text-align: left;
+    }
+</style>
+{% extends "network/layout.html" %}
+
+{% block body %}
+<h4 style="margin: 10px;"><b>All posts</b></h4><br>
+{% if user.is_authenticated %}
+<div class="parent-container">
+    <div class="new_post">
+        <h2>New post</h2>
+        <form action="{% url 'newpost' %}" method="post">
+            {% csrf_token %}
+            <textarea name="content" cols="80" rows="2" style="width: 100%;"></textarea><br>
+            <input type="submit" value="Post" class="btn btn-primary" style="width: 100%;">
+        </form>
+    </div>
     {% for post in all_posts %}
-    <div class="Post_con">
-        <h5 class="username">@{{ post.user }}</h5>
-        <h6 class="content">{{ post.content }}</h6>
-        <p class="date">{{ post.date }}</p>
-    </div>
-    {% endfor %}
-    </div>
-    <nav aria-label="Page navigation example">
-        <ul class="pagination">
-            {% if post_page.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ post_page.previous_page_number }}">Previous</a></li>
+    <div class="row Post_con">
+        <div class="Edit_button">
+            <h5 class="username"><a href="{% url 'profile' user_ident=post.user.id %}">{{ post.user }}</a></h5>
+            <h6 class="content" id="content_{{post.id}}">{{ post.content }}</h6>
+            <p class="date">{{ post.timestamp }}</p>
+            {% if user.id == post.user.id %}
+
+            <!-- Edit button need check  -->
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal_edit{{ post.id }}"
+                onclick="editPost('{{ post.id }}')">Edit</button>
+            <div class="modal fade" id="modal_edit{{ post.id }}" tabindex="-1" role="dialog"
+                aria-labelledby="modal_edit{{ post.id }}_label" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modal_edit{{ post.id }}_label">Edit Post</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <textarea id="editTextarea_{{ post.id }}" style="width: 100%;">{{ post.content }}</textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary"
+                                onclick="saveEditedPost('{{ post.id }}')">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- like and unlike heart not working -->
+            {% else %}
+            {% if post.id in you_liked %}
+             <button class="fa-solid fa-heart" id="{{ post.id }}" onclick="toggleLike({{ post.id }}, true)"
+                data-action="unlike">
+                <i class="fas fa-heart" style="color: #d81313;"></i>
+            </button>
+              {% else %}
+            <button class="fa-solid fa-heart" id="{{ post.id }}" onclick="toggleLike({{ post.id }}, false)"
+                data-action="like">
+                <i class="far fa-heart" style="color: #d81313;"></i>
+              </button>
             {% endif %}
             
-            {% if post_page.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ post_page.next_page_number }}">Next</a></li>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    <!-- Pagination need check-->
+    <nav aria-label="Page navigation example">
+        <ul class="pagination">
+            {% if all_posts.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ all_posts.previous_page_number }}">Previous</a></li>
+            {% endif %}
+            {% if all_posts.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ all_posts.next_page_number }}">Next</a></li>
             {% endif %}
         </ul>
     </nav>
+</div>
+{% endif %}
 {% endblock %}
+
+<script>
+//for like and unlike need check
+    const modals = document.getElementById('modals');
+
+    function getcookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    function handler_sub(id) {
+        const textareavalue = document.getElementById(`textarea_${id}`).value;
+        const content = document.getElementById(`content_${id}`);
+        const model = document.getElementById(`content_${id}`);
+
+        fetch(`/edit/${id}`, {
+            method: "POST",
+            headers: {
+                "Content-type": "application/json",
+                "X-CSRFToken": getcookie("csrftoken")
+            },
+            body: JSON.stringify({
+                content: textareavalue
+            })
+        })
+            .then(response => response.json())
+            .then(result => {
+                content.innerHTML = result.data;
+
+                //  'modals'
+                modals.setAttribute('aria-hidden', 'true');
+                modals.setAttribute('style', 'display: none');
+                modals.classList.remove('show');
+
+                const modalsBackdrops = document.getElementsByClassName('modal-backdrop');
+
+                for (let i = 0; i < modalsBackdrops.length; i++) {
+                    document.body.removeChild(modalsBackdrops[i]);
+                }
+            });
+    }
+
+    function likehandll(id, you_liked) {
+    if (you_liked.indexOf(id) >= 0) {
+        var liked = true;
+    } else {
+        var liked = false;
+    }
+    if (liked === true) {
+        fetch(`/delete_likes/${id}`)
+            .then(response => response.json())
+            .then(result => {
+                console.log(result);
+            });
+    } else {
+        fetch(`/add_likes/${id}`)
+            .then(response => response.json())
+            .then(result => {
+                console.log(result);
+            });
+    }
+}
+
+</script>
+
+
